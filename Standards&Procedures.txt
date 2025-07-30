@@ -1,0 +1,3 @@
+Coding Rules:
+
+1. No magic numbers -> everything must either be defined or enumerated with expressive names.
