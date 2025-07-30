@@ -1,0 +1,5 @@
+Set up Arduino IDE on necessary Laptops
+File->Preferences-> Additional Board Manager URLs -> https://dl.espressif.com/dl/package_esp32_index.json 
+Tools -> Board Manager -> install latest ver of ESP32 libraries
+Tools -> Select Board
+File -> Examples -> esp32 ->chip ID -> get chip ID (script to test connection)
