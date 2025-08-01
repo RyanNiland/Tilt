@@ -1,0 +1,50 @@
+Coding Rules:
+
+1.	Descriptive function and variable names 
+2.	Initialize all variables at declaration
+3.	Prioritize simple, efficient code
+4.	No magic numbers -> everything must either be defined or enumerated with expressive names. Ie use enums for state machines
+5.	Add layers of abstraction wherever possible 
+6.	Avoid duplicating code, rather create functions or use loops
+7.	Functions should only do one thing
+8.	A module only controls one category
+9.	Add comments to unintuitve/complex code
+10.	Minimise code in ISRs -> only set flags, increment variables
+11.	Specify Variable Scope (Volatile, static, const
+12.	No blocking code i.e. don’t use any delay() functions
+13.	One feature/function per commit -> Try test if possible before committing
+14.	Try pass variables to functions rather than rely on global variables (slight speed advantage and better code traceability)
+15.	Validate all inputs ie updateServo angle can only receive a value 0-90
+16.	Use integers over floats whereever possible (runs faster)
+17.	use a uint8_t or uint16_t instead of an array of bools
+18.	Try reduce the amount of code run per loop -> ie use a get tick to only run a func every X ms 
+19.	check for error states and print to uart with "Error: Module;Error Message"
+
+
+
+Prompting suggestions
+1. Specify Hardware and software ie ESP32-WROOM, Arduino IDE, SG 5010 Servo, I2C Oled etc
+2. Encourage modularity
+3. Specify Error Handling Behaviour ie error output through specific UART module to Arduino IDE with specific formatting ie Error Format: "Error: Module;Error Message"
+4. Add high frequency interrupts as context to encourage fast, non-blocking code
+5. Dissallow heavy library use unless absolutely neccessary
+6. Disencourage Dynamic Memory Allocation
+  Example standard prompt:
+{
+You are a senior embedded engineer proficient in writing C++ code
+You are writing code for an ESP32-WROOM using the Arduino IDE, that controls 2 servo motors and an OLED screen with 10 buttons as external interrupts that will be triggered at a high frequency. 
+
+Prioritize simple, efficient non-blocking code. Try abstract and modularize code using separate functions and .cpp and .h files where appropriate without negatively effecting speed of execution. Avoid using libraries unless absolutely necessary. Avoid using dynamic memory allocation. Limit the scope of variables as much as possible. Add simple error handling that prints to the serial monitor of the Arduino IDE with the format "Error:MODULE;ERROR MESSAGE". 
+}
+
+
+Code considerations:
+ - External Interrupt priority over I2C and PWM
+ - Record main loop time stats to see the effect of new functions/modules -> remove before demo
+ - Print debug info every 5s during testing stage ie OLED menu state, servo angle and num button presses, main loop time stats -> remove before demo
+ - Enforce servo angle limits 
+ - Timeouts/watchdogs?
+ - Blink an LED consistently as a "heartbeat" to
+ - Error handling -> wherever possible, return error num ie if( updatescreen == error_timeout){ UART_Transmit("OLED UPDATE ERROR TIMEOUT") }
+ - Using pointers instead of variable names could be faster for updating button num presses (might not be neccessary)
+ -  Use millis()-based timers for scheduling
