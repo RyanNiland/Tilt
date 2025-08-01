@@ -1,34 +1,63 @@
-bool goalScored = false;                                //Global boolean to determine if a goal has been scored
+//All includes
+#include "functions.h"
+
+//All Global Variables
+bool goalScored = false;  //Global boolean to determine if a goal has been scored
 //line above needs to go in code before calling gameplay()
+
+bool button1Flag = false;
+bool button2Flag = false;
 
 int y_p1, y_p2;  //y button presses for player 1(p1) and player 2 (p2)
 int x_p1, x_p2;  //x button presses for player 1(p1) and player 2 (p2)
 
-unsigned long powerUpStartTime = 0;                     //Global variable that sets the time when powerUp starts
-unsigned long powerUpStopTime = 0;                      //GLobal variable that sets the time when powerUp ended
+unsigned long powerUpStartTime = 0;  //Global variable that sets the time when powerUp starts
+unsigned long powerUpStopTime = 0;   //GLobal variable that sets the time when powerUp ended
 
+//Set-up of pins
 void setup() {
   // put your setup code here, to run once:
+  pinMode(28, OUTPUT);   //LED pin initialization, LED for P1 on controller
+  pinMode(30, OUTPUT);   //LED pin initialization, LED for P2 on controller
+  pinMode(6, INPUT_PULLUP);  //React Button for P1 on controller
+  pinMode(7, INPUT_PULLUP);  //React Button for P2 on controller
+
+  attachInterrupt(digitalPinToInterrupt(6), handleButton1, FALLING);  //Attaches the react button for P1 to the handleButton1 interrupt function
+  attachInterrupt(digitalPinToInterrupt(7), handleButton2, FALLING);  //Attaches the react button for P2 to the handleButton2 interrupt function
 }
 
+void IRAM_ATTR handleButton1(){    // This runs ONLY when BUTTON1 is pressed
+  button1Flag = true
+}
+
+void IRAM_ATTR handleButton2() {   // This runs ONLY when BUTTON2 is pressed
+  
+}
+
+//Main Loop
 void loop() {
   // put your main code here, to run repeatedly:
   randomSeed(esp_random());                             // ESP32 built-in hardware RNG
   long powerUpReactCooldownTime = random(5000, 30000);  //setting a random power up cooldown time for the first run, will be updated later in code
 
-  while (!goalScored) {                                 //While Game is running
-    if (millis() > angleUpdateTime) {                   //Checking if there has been sufficient time since the angle was updated
+  while (!goalScored) {                //While Game is running
+    if (millis() > angleUpdateTime) {  //Checking if there has been sufficient time since the angle was updated
       //Placeholder: Check states of Power ups
-      int x = x_p1 + x_p2;                              //These lines set the total change in x and y for the servo motors
+      int x = x_p1 + x_p2;  //These lines set the total change in x and y for the servo motors
       int y = y_p1 + y_p2;
       //Placeholder: Update Angle for the servos using variable x and y
-      x_p1 = 0;                                         //These lines reset the player positions for x and y, which get updated in the interrupt
+      x_p1 = 0;  //These lines reset the player positions for x and y, which get updated in the interrupt
       x_p2 = 0;
       y_p1 = 0;
       y_p2 = 0;
-      unsigned long angleUpdateTime = millis();         //Variable setting time for angle updates
+      unsigned long angleUpdateTime = millis();  //Variable setting time for angle updates
     }
-    if (powerUpStartTime > powerUpReactCooldownTime) {
+    if (powerUpStartTime > powerUpReactCooldownTime) {  //Checking if sufficient time has passed since the Power-Up has ended
+      powerUp();  //Calling the Power-Up state function to determine what the Power-Up will be
+      //Placeholder: Can display on OLED
+      digitalWrite(28, HIGH);  //These lines set the player 1 and 2 LEDs on the controller high
+      digitalWrite(30, HIGH);
+      if()
       //Placeholder: Initiate Power Up state machine, should this not be a function?
       powerUpReactCooldownTime = random(5000, 30000);
     }
