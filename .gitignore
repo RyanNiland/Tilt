@@ -39,3 +39,38 @@
 
 # debug information files
 *.dwo
+
+# Arduino and ESP32 build artifacts
+*.hex
+*.elf
+*.bin
+*.eep
+*.map
+*.lst
+*.d
+
+# Arduino IDE folders
+.arduinoIDE/
+build/
+
+# PlatformIO folders (if anyone uses PlatformIO)
+.pio/
+.pioenvs/
+
+# Editor backups and logs
+*~
+*.swo
+*.swp
+*.bak
+*.log
+*.csv
+*.json
+
+# VSCode project files (if used)
+.vscode/
+*.code-workspace
+
+# System files
+.DS_Store
+Thumbs.db
+
