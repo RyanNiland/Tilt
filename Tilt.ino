@@ -44,7 +44,12 @@ void setup() {
 void loop() {
   
   if(!inMatch && checkMatchStartCondition){ //checks if not in a match and players are holding down react
+    //indicate match start - buzzer/led
+    delay(1000);
     inMatch = true;
+
+    reactP1State = false;
+    reactP2State = false;
   }
 
   while(inMatch){
@@ -59,7 +64,6 @@ void loop() {
       if(goalScored){
 
         inGame = false;
-        goalScored++;
 
         if(goalCountP1 == GOALS_PER_MATCH || goalCountP2 == GOALS_PER_MATCH){
           
@@ -84,9 +88,6 @@ bool checkMatchStartCondition{
   if(p2ReactHigh == p1ReactHigh){
     startGame = true;
   }
-
-  reactP1State = false;
-  reactP2State = false;
   
   return startGame;
 }
@@ -95,8 +96,8 @@ bool checkGameStartCondition{
   bool startGame = false; 
 
   if(reactP1State && reactP2State){
-      reactP1State = false;
-      reactP2State = false;
+    reactP1State = false;
+    reactP2State = false;
     return true;
   }else{
     return false;
