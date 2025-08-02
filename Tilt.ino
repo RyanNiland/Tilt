@@ -3,6 +3,8 @@
 //defines
 #define REACT_BUTTON_P1_PIN 34
 #define REACT_BUTTON_P2_PIN 35
+
+#define GOALS_PER_MATCH 3
 //Global Variables
 bool inGame = false; // individual point
 bool inMatch = false; // whole play
@@ -59,7 +61,7 @@ void loop() {
         inGame = false;
         goalScored++;
 
-        if(goalCountP1 == 3 || goalCountP2 == 3){
+        if(goalCountP1 == GOALS_PER_MATCH || goalCountP2 == GOALS_PER_MATCH){
           
           //initiate game end condition - can be blocking code
           inMatch = false;
