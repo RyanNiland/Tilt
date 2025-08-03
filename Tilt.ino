@@ -4,14 +4,14 @@
 #define REACT_BUTTON_P1_PIN 34
 #define REACT_BUTTON_P2_PIN 35
 
-#define X_AXIS_UP_P1_PIN 12
-#define X_AXIS_DOWN_P1_PIN 13
-#define Y_AXIS_LEFT_P1_PIN 14
-#define Y_AXIS_RIGHT_P1_PIN 15
-#define X_AXIS_UP_P2_PIN 25
-#define X_AXIS_DOWN_P2_PIN 26
-#define Y_AXIS_LEFT_P2_PIN 27
-#define Y_AXIS_RIGHT_P2_PIN 32
+#define X_AXIS_UP_P1_PIN 25
+#define X_AXIS_DOWN_P1_PIN 26
+#define Y_AXIS_LEFT_P1_PIN 27
+#define Y_AXIS_RIGHT_P1_PIN 32
+#define X_AXIS_UP_P2_PIN 12
+#define X_AXIS_DOWN_P2_PIN 13
+#define Y_AXIS_LEFT_P2_PIN 14
+#define Y_AXIS_RIGHT_P2_PIN 15
 
 
 
@@ -33,6 +33,19 @@ uint32_t p2PressesX = 0;
 uint32_t p2PressesY = 0;
 
 //Function Initiations
+void IRAM_ATTR reactButtonPressP1(void);
+void IRAM_ATTR reactButtonPressP2(void);
+void IRAM_ATTR upX_P1(void);
+void IRAM_ATTR downX_P1(void);
+void IRAM_ATTR leftY_P1(void);
+void IRAM_ATTR rightY_P1(void);
+void IRAM_ATTR upX_P2(void);
+void IRAM_ATTR downX_P2(void);
+void IRAM_ATTR leftY_P2(void);
+void IRAM_ATTR rightY_P2(void);
+
+bool checkMatchStartCondition(void);
+bool checkGameStartCondition(void);
 
 //ISRs
 void IRAM_ATTR reactButtonPressP1() {
@@ -51,9 +64,11 @@ void IRAM_ATTR downX_P1() {
 }
 void IRAM_ATTR leftY_P1() {
   p1PressesY +=1;
+  Serial.println("P1 Left");
 }
 void IRAM_ATTR rightY_P1() {
   p1PressesY -=1;
+  Serial.println("P1 Right");
 }
 void IRAM_ATTR upX_P2() {
   p2PressesX += 1;
@@ -70,6 +85,9 @@ void IRAM_ATTR rightY_P2() {
 
 //Set-up of pins
 void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  Serial.println("Power On");
   //set pins
   pinMode(REACT_BUTTON_P1_PIN, INPUT_PULLUP);
   pinMode(REACT_BUTTON_P2_PIN, INPUT_PULLUP);
@@ -84,17 +102,18 @@ void setup() {
   
 
   //attatch ISRs to buttons
-  attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P1_PIN), reactButtonPressP1, Rising);
-  attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P2_PIN), reactButtonPressP2, Rising);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P1_PIN), upX_P1, Rising);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P1_PIN),downX_P1, Rising);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P1_PIN), leftY_P1, Rising);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P1_PIN), rightY_P1, Rising);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P2_PIN), upX_P2, Rising);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P2_PIN), downX_P2, Rising);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P2_PIN), leftY_P2, Rising);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P2_PIN), rightY_P2, Rising);
+  attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P1_PIN), reactButtonPressP1, RISING);
+  attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P2_PIN), reactButtonPressP2, RISING);
+  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P1_PIN), upX_P1, RISING);
+  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P1_PIN),downX_P1, RISING);
+  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P1_PIN), leftY_P1, RISING);
+  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P1_PIN), rightY_P1, RISING);
+  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P2_PIN), upX_P2, RISING);
+  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P2_PIN), downX_P2, RISING);
+  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P2_PIN), leftY_P2, RISING);
+  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P2_PIN), rightY_P2, RISING);
 
+  Serial.println("Initialized");
 }
 
 //Main Loop
@@ -113,6 +132,7 @@ void loop() {
 
     if(!inGame && checkGameStartCondition){//checks if not in a game and players have pressed their react
       inGame = true;
+      Serial.println("In Game");
     } 
 
     while(inGame){
@@ -122,8 +142,9 @@ void loop() {
 
         inGame = false;
 
+
         if(goalCountP1 == GOALS_PER_MATCH || goalCountP2 == GOALS_PER_MATCH){
-          
+          Serial.println("End Game");
           //initiate game end condition - can be blocking code
           inMatch = false;
         }
@@ -136,7 +157,7 @@ void loop() {
 
 
 
-bool checkMatchStartCondition{
+bool checkMatchStartCondition(void){
   bool startGame = false; 
 
   bool p1ReactHigh = digitalRead(REACT_BUTTON_P1_PIN) == HIGH;
@@ -149,7 +170,7 @@ bool checkMatchStartCondition{
   return startGame;
 }
 
-bool checkGameStartCondition{
+bool checkGameStartCondition(void){
   bool startGame = false; 
 
   if(reactP1State && reactP2State){
@@ -165,7 +186,7 @@ bool checkGameStartCondition{
 }
 
 
-void ledControl(){
+void ledControl(void){
   //if react high and Game but not match set power led high
   //if powerup active set powerup led high
 }
