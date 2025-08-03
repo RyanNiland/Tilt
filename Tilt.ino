@@ -5,6 +5,9 @@
 #define REACT_BUTTON_P1_PIN 19
 #define REACT_BUTTON_P2_PIN 35
 
+#define REACT_LED_P1_PIN 17
+#define REACT_LED_P2_PIN 18
+
 #define X_AXIS_UP_P1_PIN 25
 #define X_AXIS_DOWN_P1_PIN 26
 #define Y_AXIS_LEFT_P1_PIN 27
@@ -22,7 +25,7 @@
 #define GOALS_PER_MATCH 3
 
 #define DEFAULT_X_ANGLE 45
-#define DEFAULT_Y_ANGLE 45
+#define DEFAULT_Y_ANGLE 55
 
 #define DEG_PER_PRESS 4
 
@@ -31,8 +34,10 @@
 bool inGame = false; // individual point
 bool inMatch = false; // whole play
 
-bool reactP1State = false;
-bool reactP2State = false;
+volatile bool reactP1State = false;
+volatile bool reactP2State = false;
+bool printP1ReadyOnce = true;
+bool printP2ReadyOnce = true;
 
 bool p1GoalScored = false;
 bool p2GoalScored = false;
@@ -40,27 +45,27 @@ bool p2GoalScored = false;
 uint8_t goalCountP1 = 0;
 uint8_t goalCountP2 = 0;
 
-uint32_t p1PressesX = 0;
-uint32_t p1PressesY = 0;
-uint32_t p2PressesX = 0;
-uint32_t p2PressesY = 0;
+volatile int p1PressesX = 0;
+volatile int p1PressesY = 0;
+volatile int p2PressesX = 0;
+volatile int p2PressesY = 0;
 
 Servo xServo;
 Servo yServo;
 
 unsigned long lastServoUpdate = 0;
 
-unsigned long lastP1UpPress = 0;
-unsigned long lastP1DownPress = 0;
-unsigned long lastP1LeftPress = 0;
-unsigned long lastP1RightPress = 0;
-unsigned long lastP1ReactPress = 0;
+unsigned long lastDebounceP1React = 0;
+unsigned long lastDebounceP2React = 0;
 
-unsigned long lastP2UpPress = 0;
-unsigned long lastP2DownPress = 0;
-unsigned long lastP2LeftPress = 0;
-unsigned long lastP2RightPress = 0;
-unsigned long lastP2ReactPress = 0;
+unsigned long lastDebounceP1Up = 0;
+unsigned long lastDebounceP1Down = 0;
+unsigned long lastDebounceP1Left = 0;
+unsigned long lastDebounceP1Right = 0;
+unsigned long lastDebounceP2Up = 0;
+unsigned long lastDebounceP2Down = 0;
+unsigned long lastDebounceP2Left = 0;
+unsigned long lastDebounceP2Right = 0;
 
 
 //Function Initiations
@@ -79,97 +84,14 @@ bool checkMatchStartCondition(void);
 bool checkGameStartCondition(void);
 
 int currentXAngle = DEFAULT_X_ANGLE;
-int currentYANgle = DEFAULT_Y_ANGLE;
+int currentYAngle = DEFAULT_Y_ANGLE;
 
-
-
-//ISRs
-void IRAM_ATTR reactButtonPressP1() {
-  if(millis() - lastP1ReactPress > DEBOUNCE_PERIOD_MS){
-    reactP1State = true;
-    Serial.println("React P1");
-    lastP1ReactPress = millis();
-  }
-
-}
-
-void IRAM_ATTR reactButtonPressP2() {
-  if(millis() - lastP2ReactPress > DEBOUNCE_PERIOD_MS){
-    reactP2State = true;
-    lastP2ReactPress = millis();
-  }
-  
-}
-
-void IRAM_ATTR upX_P1() {
-  if(millis() - lastP1UpPress > DEBOUNCE_PERIOD_MS){
-    p1PressesX += 1;
-    Serial.println("Up P1");
-    lastP1UpPress = millis();
-  }
-  
-}
-void IRAM_ATTR downX_P1() {
-  if(millis() - lastP1DownPress > DEBOUNCE_PERIOD_MS){
-    p1PressesX -= 1;
-    Serial.println("Down P1");
-    lastP1DownPress = millis();
-  }
-  
-
-}
-void IRAM_ATTR leftY_P1() {
-  if(millis() - lastP1LeftPress > DEBOUNCE_PERIOD_MS){
-    p1PressesY +=1;
-    Serial.println("Left P1");
-    lastP1LeftPress = millis();
-  }
-  
-
-}
-void IRAM_ATTR rightY_P1() {
-  if(millis() - lastP1RightPress > DEBOUNCE_PERIOD_MS){
-    p1PressesY -=1;
-    Serial.println("Right P1");
-    lastP1RightPress = millis();
-  } 
-}
-void IRAM_ATTR upX_P2() {
-  if(millis() - lastP2UpPress > DEBOUNCE_PERIOD_MS){
-    p2PressesX += 1;
-    Serial.println("Up P2");
-    lastP2UpPress = millis();
-  }
-  
-}
-void IRAM_ATTR downX_P2() {
-  if(millis() - lastP2DownPress > DEBOUNCE_PERIOD_MS){
-    p2PressesX -= 1;
-    Serial.println("Down P2");
-    lastP2DownPress = millis();
-  }
-  
-}
-void IRAM_ATTR leftY_P2() {
-  if(millis() - lastP2LeftPress > DEBOUNCE_PERIOD_MS){
-    p2PressesY +=1;
-    Serial.println("Left P2");
-    lastP2LeftPress = millis();
-  }
-  
-}
-void IRAM_ATTR rightY_P2() {
-  if(millis() - lastP2RightPress > DEBOUNCE_PERIOD_MS){
-    p2PressesY -=1
-    Serial.println("Right P2");
-    lastP2RightPress = millis();
-  }
-}
 
 //Set-up of pins
 void setup() {
   Serial.begin(115200);
   delay(1000);
+  Serial.println("Power up");
   
   //set pins
   pinMode(REACT_BUTTON_P1_PIN, INPUT_PULLUP);
@@ -184,20 +106,9 @@ void setup() {
   pinMode(Y_AXIS_RIGHT_P2_PIN, INPUT_PULLUP);
   
 
-  //attatch ISRs to buttons
- attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P1_PIN), reactButtonPressP1, RISING);
-  attachInterrupt(digitalPinToInterrupt(REACT_BUTTON_P2_PIN), reactButtonPressP2, RISING);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P1_PIN), upX_P1, RISING);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P1_PIN),downX_P1, RISING);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P1_PIN), leftY_P1, RISING);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P1_PIN), rightY_P1, RISING);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_UP_P2_PIN), upX_P2, RISING);
-  attachInterrupt(digitalPinToInterrupt(X_AXIS_DOWN_P2_PIN), downX_P2, RISING);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_LEFT_P2_PIN), leftY_P2, RISING);
-  attachInterrupt(digitalPinToInterrupt(Y_AXIS_RIGHT_P2_PIN), rightY_P2, RISING);
 
   xServo.attach(X_SERVO_PIN);  
-  yServo.attatch(Y_SERVO_PIN);
+  yServo.attach(Y_SERVO_PIN);
 
   xServo.write(DEFAULT_X_ANGLE);
   yServo.write(DEFAULT_Y_ANGLE);
@@ -206,8 +117,9 @@ void setup() {
 
 //Main Loop
 void loop() {
-  
-  if(!inMatch && checkMatchStartCondition){ //checks if not in a match and players are holding down react
+  pollReactButtons();
+
+  if(!inMatch && checkMatchStartCondition()){ //checks if not in a match and players are holding down react
     //indicate match start - buzzer/led
     Serial.println("Start Match");
     delay(500);
@@ -219,17 +131,19 @@ void loop() {
 
   while(inMatch){
 
-    if(!inGame && checkGameStartCondition){//checks if not in a game and players have pressed their react
+    if(!inGame && checkGameStartCondition()){//checks if not in a game and players have pressed their react
       inGame = true;
+      Serial.println("Start Game");
       //Serial.println("In Game");
     } 
 
     while(inGame){
       //gameloop
-
+      pollMoveButtons();
+      pollReactButtons();
       if(millis()-lastServoUpdate > SERVO_UPDATE_PERIOD_MS){
         currentXAngle = currentXAngle + DEG_PER_PRESS*(p1PressesX - p2PressesX);
-        currentYANgle = currentYANgle + DEG_PER_PRESS*(p1PressesY - p2PressesY);
+        currentYAngle = currentYAngle + DEG_PER_PRESS*(p1PressesY - p2PressesY);
 
         // Print registered presses
         Serial.print("P1 X: ");
@@ -241,8 +155,20 @@ void loop() {
         Serial.print(" | P2 Y: ");
         Serial.println(p2PressesY);
 
+        if(currentXAngle > DEFAULT_X_ANGLE +20){
+          currentXAngle = DEFAULT_X_ANGLE +20;
+        }else if(currentXAngle < DEFAULT_X_ANGLE -20){
+          currentXAngle = DEFAULT_X_ANGLE -20;
+        }
+
+        if(currentYAngle > DEFAULT_Y_ANGLE +20){
+          currentYAngle = DEFAULT_Y_ANGLE +20;
+        }else if(currentYAngle < DEFAULT_Y_ANGLE -20){
+          currentYAngle = DEFAULT_Y_ANGLE -20;
+        }
+
         xServo.write(currentXAngle);
-        yServo.write(currentYANgle;
+        yServo.write(currentYAngle);
 
         p1PressesX = 0;
         p1PressesY = 0;
@@ -273,6 +199,63 @@ void loop() {
 
 }
 
+void pollReactButtons() {
+  bool p1State = digitalRead(REACT_BUTTON_P1_PIN) == LOW;
+  bool p2State = digitalRead(REACT_BUTTON_P2_PIN) == LOW;
+
+  if (p1State && (millis() - lastDebounceP1React > DEBOUNCE_PERIOD_MS)) {
+    reactP1State = true;
+    lastDebounceP1React = millis();
+  }
+
+  if (p2State && (millis() - lastDebounceP2React > DEBOUNCE_PERIOD_MS)) {
+    reactP2State = true;
+    lastDebounceP2React = millis();
+  }
+}
+
+void pollMoveButtons() {
+  if (digitalRead(X_AXIS_UP_P1_PIN) == LOW && millis() - lastDebounceP1Up > DEBOUNCE_PERIOD_MS) {
+    p1PressesX += 1;
+    lastDebounceP1Up = millis();
+  }
+
+  if (digitalRead(X_AXIS_DOWN_P1_PIN) == LOW && millis() - lastDebounceP1Down > DEBOUNCE_PERIOD_MS) {
+    p1PressesX -= 1;
+    lastDebounceP1Down = millis();
+  }
+
+  if (digitalRead(Y_AXIS_LEFT_P1_PIN) == LOW && millis() - lastDebounceP1Left > DEBOUNCE_PERIOD_MS) {
+    p1PressesY += 1;
+    lastDebounceP1Left = millis();
+  }
+
+  if (digitalRead(Y_AXIS_RIGHT_P1_PIN) == LOW && millis() - lastDebounceP1Right > DEBOUNCE_PERIOD_MS) {
+    p1PressesY -= 1;
+    lastDebounceP1Right = millis();
+  }
+
+  if (digitalRead(X_AXIS_UP_P2_PIN) == LOW && millis() - lastDebounceP2Up > DEBOUNCE_PERIOD_MS) {
+    p2PressesX += 1;
+    lastDebounceP2Up = millis();
+  }
+
+  if (digitalRead(X_AXIS_DOWN_P2_PIN) == LOW && millis() - lastDebounceP2Down > DEBOUNCE_PERIOD_MS) {
+    p2PressesX -= 1;
+    lastDebounceP2Down = millis();
+  }
+
+  if (digitalRead(Y_AXIS_LEFT_P2_PIN) == LOW && millis() - lastDebounceP2Left > DEBOUNCE_PERIOD_MS) {
+    p2PressesY += 1;
+    lastDebounceP2Left = millis();
+  }
+
+  if (digitalRead(Y_AXIS_RIGHT_P2_PIN) == LOW && millis() - lastDebounceP2Right > DEBOUNCE_PERIOD_MS) {
+    p2PressesY -= 1;
+    lastDebounceP2Right = millis();
+  }
+}
+
 
 
 bool checkMatchStartCondition(void){
@@ -291,9 +274,21 @@ bool checkMatchStartCondition(void){
 bool checkGameStartCondition(void){
   bool startGame = false; 
 
+  if(reactP1State && printP1ReadyOnce){
+    Serial.println("P1 ready");
+    printP1ReadyOnce = false;
+  }
+  if(reactP2State && printP2ReadyOnce){
+    Serial.println("P2 ready");
+    printP2ReadyOnce = false;
+  }
+
   if(reactP1State && reactP2State){
     reactP1State = false;
     reactP2State = false;
+    printP1ReadyOnce = true;
+    printP2ReadyOnce = true;
+
     return true;
   }else{
     return false;
